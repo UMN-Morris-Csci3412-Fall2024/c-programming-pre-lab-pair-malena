@@ -1,6 +1,7 @@
 # Leak report
 
-_Use this document to describe whatever memory leaks
-you find in `clean_whitespace.c` and how you might fix
-them. You should also probably remove this explanatory
-text._
+## Memory Leaks Found
+
+- The `strip` function in `check_whitespace.c` had a memory leak. The `strip` function allocates memory for a new string containing the input string with the spaces in the beginning and end removed. The function used `calloc` and `strdup`. The function returns a pointer to the memory that was allocated. The memory leak occurred because the memory allocated by `strip` was not being freed. More specifically, when the input string consists only of spaces, `strdup` allocates memory for an empty string, which was not being freed. Also, the memory allocated by `calloc` for the result string was not being freed. To fix this leak, I had to make sure the caller of `strip` was freeing the allocated memory. The caller for `strip` is `is_clean` so I added a `free` call to `is_clean`.
+
+- The test cases in `check_whitespace_test.cpp` also had memory leaks. These leaks occurred when testing the `strip` function alone (not when testing `is_clean`). The leaks occurred for the same reasons as before, the memory allocated by `strip` was not being freed. More specifically, when the input string consists only of spaces, `strdup` allocates memory for an empty string, which was not being freed. Also, the memory allocated by `calloc` for the result string was not being freed. I fixed this by freeing the memory in the caller (`is_clean`) but since the tests are testing `strip` specifically, the allocated memory is never freed. To fix the leaks in the test file, I added `free` calls to each I the tests for `strip`.
