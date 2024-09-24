@@ -5,6 +5,8 @@
 /*
  * Strips spaces from both the front and back of a string,
  * leaving any internal spaces alone.
+ * 
+ * Note: The caller is responsible for freeing the returned string.
  */
 char const *strip(char const *str) {
   int size = strlen(str);
@@ -18,7 +20,7 @@ char const *strip(char const *str) {
     ++first_non_space;
   }
 
-  int last_non_space = size-1;
+  int last_non_space = size - 1;
   while (last_non_space >= 0 && str[last_non_space] == ' ') {
     ++num_spaces;
     --last_non_space;
@@ -28,20 +30,24 @@ char const *strip(char const *str) {
   // consisted of nothing but spaces, so we'll return the
   // empty string.
   if (num_spaces >= size) {
-    return "";
+    return strdup(""); // strdup allocates memory for the empty string
   }
 
   // Allocate a slot for all the "saved" characters
   // plus one extra for the null terminator.
-  char* result = (char*) calloc(size-num_spaces+1, sizeof(char));
+  char* result = (char*) calloc(size - num_spaces + 1, sizeof(char));
+  if (result == NULL) {
+    // Handle memory allocation failure
+    return NULL;
+  }
 
   // Copy in the "saved" characters.
   int i;
   for (i = first_non_space; i <= last_non_space; ++i) {
-    result[i-first_non_space] = str[i];
+    result[i - first_non_space] = str[i];
   }
   // Place the null terminator at the end of the result string.
-  result[i-first_non_space] = '\0';
+  result[i - first_non_space] = '\0';
 
   return result;
 }
@@ -54,12 +60,18 @@ int is_clean(char const *str) {
   // We check if it's clean by calling strip and seeing if the
   // result is the same as the original string.
   char const *cleaned = strip(str);
+  if (cleaned == NULL) {
+    return 0; // Memory allocation failed
+  }
 
   // strcmp compares two strings, returning a negative value if
   // the first is less than the second (in alphabetical order),
   // 0 if they're equal, and a positive value if the first is
   // greater than the second.
   int result = strcmp(str, cleaned);
+
+  // Free the allocated memory
+  free((void*)cleaned);
 
   return result == 0;
 }
